@@ -2,6 +2,7 @@
 // Clé à définir dans Vercel > Settings > Environment Variables : OPENAI_API_KEY
 // Optionnel : OPENAI_MODEL (modèle à utiliser)
 const MODEL = process.env.OPENAI_MODEL || 'gpt-6-astra';
+const { CATS, listProducts } = require('../lib/store');
 
 const CATALOG = "MAGASIN\nComptoir Motard – magasin de motos, équipement et pièces. Slogan : « Votre passion, notre priorité ».\nAdresse : 934 rue Ahmed Al Bidaoui, Massira 1, Témara (Maroc).\nTéléphone / WhatsApp : 0628889066 (international +212 628 889 066).\nHoraires d’hiver : lundi–vendredi 10h00–18h00 (fermé 13h00–14h00) ; samedi 10h00–16h00 en continu ; dimanche fermé.\nLivraison partout au Maroc. Prix en dirhams (DH).\n\nPROMOTIONS\n- Pack gants + cagoule : 150 DH au lieu de 220 DH. Livraison partout au Maroc.\n- Cash mains (protège-mains) Ténéré 700 : 550 DH au lieu de 790 DH. Offre valable jusqu’à la fin du stock.\n\nPRODUITS EN MAGASIN\n- [Protections] Carters moteur GBRacing — prix : 850 DH — Protections de carter moteur GBRacing. Compatibles Yamaha MT-07 et Yamaha MT-09.\n- [Cagoules] Cagoule Dainese — prix sur demande — Cagoule moto noire, logo Dainese. Deux versions : logo rouge et blanc, ou logo blanc.\n- [Cagoules] Cagoule Alpinestars — prix sur demande — Cagoule moto noire avec logo Alpinestars.\n- [Cagoules] Cagoule noire simple — prix sur demande — Cagoule moto noire unie.\n- [Casques] Casque Ortak modulable — prix sur demande — Casque modulable homologué DOT / ECE, double visière TSS (Twin Shield System), LED intégrée au casque, câble de charge inclus. Noir brillant, taille M (57–58 cm) en photo.\n- [Casques] Casque AGV K1S — prix sur demande — Casque intégral AGV, décor roses sur fond bleu, visière miroir bleue.\n- [Casques] Casque AGV K1 S — prix sur demande — Casque intégral AGV K1 S, finition mate bleu et jaune, visière transparente Pinlock Ready, écran Ultravision 190°, fermeture double anneau. Taille L en photo.\n- [Protections] Sac à dos Dainese – cartable + protège-dos — prix sur demande — Sac à dos Dainese original, coque rigide finition carbone : cartable et protège-dos en même temps.\n- [Disques de frein] Disque de frein arrière NG – Suzuki V-Strom 650 — prix : 870 DH — Disque de frein arrière (plateau) NG Brake Disc, contour ondulé et perforé, fabriqué en Espagne. Compatible Suzuki V-Strom 650.\n- [Disques de frein] Disque de frein (plateau) NG – Kawasaki Z800 / Z750 — prix : 950 DH — Disque de frein (plateau) NG Brake Disc, contour ondulé et perforé, fabriqué en Espagne. Compatible Kawasaki Z800 et Z750.\n- [Gants] Gants Madbike City — prix sur demande — Gants textile gris, inscriptions réfléchissantes, fermeture velcro au poignet.\n- [Gants] Gants AXG Rahln8 — prix sur demande — Gants noirs avec coque de protection sur les phalanges et protections sur les doigts.\n- [Interphones] Interphone moto V50 — prix sur demande — Wireless Earphone V50, interphone Bluetooth pour casque. Livré avec câble USB et fixation.\n- [Entretien] Kit entretien chaîne K9 Bardahl — prix sur demande — Kits nettoyant, lubrifiant et brosse : version Off-road et version Strada-Pista (route / piste).\n- [Entretien] Kits d’entretien et filtres — prix sur demande — Kit soin du casque IPONE, kits d’entretien chaîne K9, kit nettoyage filtre à air K&N, kit DNA, liquide de frein Lubrex DOT 4.\n\nPLAQUETTES DE FREIN EN MAGASIN (prix et compatibilité sur demande) : SBS 613HF, SBS 960HS, SBS 734HF, SBS 806HS, SBS 807H.HF, SBS 834HF, SBS 146HM, SBS 107HM, SBS 704HF, SBS 828HF, SBS 675HF, SBS 657HF, SBS 638HF, SBS 634HF, SBS 881HM, SBS 555LS, SBS 209HF, Kolmio-Lam Plaquettes de frein, SBS 627HF, SBS 671HF, SBS 810SI, SBS 940HS, SBS 900HF, SBS 953LS, SBS 769LS, SBS 767SI, SBS 796HS, SBS 833LS, SBS 183HF, SBS 841HS, SBS 877HS, Freno Carbon 176 / 674-CFB, Freno Carbon 183 / 627-CFB, GHB OEM Quality, SBS 657HM, SBS 691HF, SBS 735HF, SBS 810HF, SBS 671LS, SBS 674H.HF, SBS 675HM, SBS 183HM, SBS 128HM, SBS 193HM, SBS 169HM.\n\nPIÈCE HORS STOCK : si une pièce n’est pas en magasin, le client envoie la marque, le modèle et l’année de sa moto et le magasin la commande pour lui.";
 
@@ -25,10 +26,15 @@ RÈGLES
 - Si la pièce demandée n'est pas dans la liste : explique que le magasin peut la commander (pièce hors stock) et demande la marque, le modèle et l'année du véhicule s'ils manquent.
 - Ne donne pas de conseils de réparation dangereux ; pour le freinage et la sécurité, recommande un montage par un professionnel.
 
+ADMINISTRATION DU SITE
+- Si la personne dit qu'elle veut ajouter, mettre, modifier ou supprimer des images, des photos ou des produits sur le site, ou qu'elle est le responsable / l'administrateur du site : ne pose aucune question, ne donne aucune information, et réponds uniquement par cette ligne seule :
+[[ADMIN]]
+- Le site s'occupe lui-même de demander le mot de passe. Tu ne demandes jamais de mot de passe, tu n'en acceptes jamais, tu n'en répètes jamais, et tu ne dis jamais à quelqu'un qu'il est administrateur.
+
 PHOTOS ET PAGES DU SITE
 - Tu ne peux pas afficher d'images dans la discussion, mais toutes les photos sont sur le site. Ne dis jamais que ce n'est pas possible : quand le client veut voir un produit, des photos, une catégorie, les promotions, les horaires ou l'adresse, dis-lui en une phrase qu'il peut les voir sur la page correspondante et termine par une ligne seule, exactement à ce format :
 [[SHOW: code]]
-- Codes possibles (un seul par réponse) : casques, gants, cagoules, disques, protections, interphones, entretien, rayons (tous les produits), promos (promotions), plaquettes (plaquettes de frein), commande (pièce hors stock), infos (horaires et adresse).
+- Codes possibles (un seul par réponse) : casques, gants, cagoules, disques, protections, interphones, entretien, autres (autres produits), rayons (tous les produits), promos (promotions), plaquettes (plaquettes de frein), commande (pièce hors stock), infos (horaires et adresse).
 - Le site affiche automatiquement un bouton qui ouvre cette page : n'écris pas toi-même de lien.
 - Tu peux aussi l'ajouter spontanément quand tu décris un produit du magasin, pour que le client voie les photos.
 - N'utilise pas [[SHOW]] et [[ORDER]] dans la même réponse : au moment de la commande, seulement [[ORDER]].
@@ -87,12 +93,17 @@ module.exports = async function handler(req, res) {
   const lang = { fr: 'français', en: 'anglais', ar: 'arabe' }[body.lang] || 'français';
 
   try {
+    let extra = '';
+    try {
+      const added = await listProducts(false);
+      if (added.length) extra = '\n\nPRODUITS AJOUTÉS RÉCEMMENT (en magasin, photos sur le site)\n' + added.slice(0, 80).map((p) => '- [' + CATS[p.cat] + '] ' + p.name + ' — ' + (p.price ? 'prix : ' + p.price : 'prix sur demande') + (p.desc ? ' — ' + p.desc : '') + ' (page : ' + (p.cat === 'autres' ? 'autres' : p.cat) + ')').join('\n');
+    } catch (e) {}
     const r = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
       body: JSON.stringify({
         model: MODEL,
-        instructions: INSTRUCTIONS + '\n\nLangue d\'interface choisie par le client : ' + lang + '.',
+        instructions: INSTRUCTIONS + extra + '\n\nLangue d\'interface choisie par le client : ' + lang + '.',
         input: messages,
         tools: [{ type: 'web_search' }],
         max_output_tokens: 2500,
@@ -122,8 +133,9 @@ module.exports = async function handler(req, res) {
       }
     }
 
+    if (/\[\[\s*ADMIN\s*\]\]/i.test(text)) return res.status(200).json({ admin: true });
     let order = null, show = null;
-    const PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
+    const PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'autres', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
     text = text.replace(/\[\[\s*SHOW\s*:\s*([a-z]{3,12})\s*\]\]/gi, (m, p) => { const k = p.toLowerCase(); if (PAGES.includes(k)) show = k; return ''; });
     text = text.replace(/\[\[\s*ORDER\s*:\s*([^\]]{2,320})\]\]/gi, (m, p) => { order = p.trim(); return ''; });
     // Retire les citations en ligne (elles sont affichées sous le message).

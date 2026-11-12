@@ -1,7 +1,7 @@
 // Comptoir Motard – service worker
 // Change le numéro de version à chaque mise à jour du site.
-const CACHE = 'comptoir-motard-v11';
-const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'chat.css', 'chat.js', 'img/logo.webp', 'img/bg.svg', 'img/bg-dark.svg', 'img/avatar-0.webp', 'img/avatar-1.webp', 'img/avatar-2.webp'];
+const CACHE = 'comptoir-motard-v12';
+const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'chat.css', 'chat.js', 'products.js', 'img/logo.webp', 'img/bg.svg', 'img/bg-dark.svg', 'img/avatar-0.webp', 'img/avatar-1.webp', 'img/avatar-2.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
@@ -18,7 +18,8 @@ self.addEventListener('activate', e => {
 // Réseau d'abord (toujours la dernière version), cache si hors ligne.
 self.addEventListener('fetch', e => {
   const req = e.request;
-  if (req.method !== 'GET' || new URL(req.url).origin !== location.origin) return;
+  const u = new URL(req.url);
+  if (req.method !== 'GET' || u.origin !== location.origin || u.pathname.indexOf('/api/') !== -1) return;
   e.respondWith(
     fetch(req)
       .then(res => {

@@ -186,15 +186,19 @@
   }
 
   function ask(q) {
-    if (busy) return; busy = true; send.disabled = true;
+    if (busy) return;
+    if (adm.on) return adminInput(q);
+    if (ADMIN_RE.test(q)) { userMsg(q); return adminStart(); }
+    busy = true; send.disabled = true;
     var me = el('div', 'cm-msg cm-me', q); me.setAttribute('dir', 'auto'); log.appendChild(me);
     var wait = el('div', 'cm-msg cm-bot'), dots = el('span', 'cm-dots'); dots.appendChild(el('i')); dots.appendChild(el('i')); dots.appendChild(el('i')); wait.appendChild(dots); log.appendChild(wait); scroll();
     history.push({ role: 'user', content: q });
     var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 75000);
     fetch('api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lang: lang, messages: history.slice(-10) }), signal: ctl ? ctl.signal : undefined })
-      .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.text) throw new Error(j.error || 'err'); return j; }); })
+      .then(function (r) { return r.json().then(function (j) { if (!r.ok || (!j.text && !j.admin)) throw new Error(j.error || 'err'); return j; }); })
       .then(function (j) {
-        clearTimeout(to); wait.remove(); history.push({ role: 'assistant', content: j.text });
+        clearTimeout(to); wait.remove();
+        if (j.admin) { history.pop(); end(); return adminStart(); } history.push({ role: 'assistant', content: j.text });
         say(j.text, j.order || null, j.sources || [], end, j.show || null);
       })
       .catch(function () {
@@ -204,11 +208,136 @@
     function end() { busy = false; send.disabled = false; }
   }
 
+  // ---------- mode administrateur (en français, jamais envoyé à l'IA) ----------
+  var ADMIN_RE = /(ajouter|rajouter|mettre|publier|supprimer|enlever|retirer|modifier|changer)\s.{0,30}(images?|photos?|produits?|articles?)|\badd\s.{0,20}(images?|photos?|pictures?|products?)|\bmode\s+admin|(إضافة|أضيف|نضيف|نزيد)\s.{0,15}(صور|صورة|منتج|منتوج)/i;
+  var adm = { on: false, token: null, stage: null, cats: null };
+  function userMsg(q) { var me = el('div', 'cm-msg cm-me', q); me.setAttribute('dir', 'auto'); log.appendChild(me); scroll(); }
+  function botBox() { var b = el('div', 'cm-msg cm-bot cm-adm'); log.appendChild(b); return b; }
+  function post(data) {
+    return fetch('api/admin', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { j.status = r.status; return j; }); })
+      .catch(function () { return { status: 0, error: 'network' }; });
+  }
+  function adminStart() {
+    adm.on = true; adm.token = null; adm.stage = 'password';
+    input.type = 'password'; input.autocomplete = 'off'; input.placeholder = 'Mot de passe'; input.value = '';
+    say('Mode administrateur. Quel est le mot de passe ?', null, []);
+  }
+  function adminQuit(msg) {
+    adm.on = false; adm.token = null; adm.stage = null; input.type = 'text'; input.placeholder = T[lang].ph; input.value = '';
+    say(msg || 'Mode administrateur fermé.', null, []);
+  }
+  function adminInput(q) {
+    if (adm.stage !== 'password') { input.value = ''; return say('Utilisez les boutons ci-dessus, ou touchez « Quitter ».', null, []); }
+    userMsg('••••••••'); busy = true; send.disabled = true;
+    post({ action: 'login', password: q }).then(function (j) {
+      busy = false; send.disabled = false;
+      if (j.status === 200 && j.token) {
+        adm.token = j.token; adm.cats = j.cats || {}; adm.stage = 'menu'; input.type = 'text'; input.placeholder = T[lang].ph;
+        if (!j.storage) return adminQuit('Mot de passe correct, mais le stockage des photos n’est pas encore activé sur Vercel. Activez-le, puis réessayez.');
+        say('Mot de passe correct. Que voulez-vous faire ?', null, [], adminMenu);
+      } else if (j.status === 401) say('Mot de passe incorrect.' + (j.left != null ? ' Essais restants : ' + j.left + '.' : ''), null, []);
+      else if (j.status === 429) adminQuit('Trop d’essais. Réessayez dans 15 minutes.');
+      else if (j.error === 'not_configured') adminQuit('Le mot de passe administrateur n’est pas encore configuré sur Vercel.');
+      else if (j.error === 'weak_password') adminQuit('Le mot de passe configuré sur Vercel est trop court (10 caractères minimum).');
+      else adminQuit('Connexion impossible pour le moment. Réessayez plus tard.');
+    });
+  }
+  function expired(j) { if (j.status === 401) { adm.token = null; adm.stage = 'password'; input.type = 'password'; input.placeholder = 'Mot de passe'; say('Session expirée. Quel est le mot de passe ?', null, []); return true; } return false; }
+  function btn(label, cls, fn) { var b = el('button', 'cm-abtn' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.addEventListener('click', fn); return b; }
+  function adminMenu() {
+    if (!adm.on || !adm.token) return;
+    var b = botBox();
+    b.appendChild(btn('Ajouter un produit', 'red', function () { adminAdd(); }));
+    b.appendChild(btn('Supprimer un produit', '', function () { adminDelete(); }));
+    b.appendChild(btn('Quitter', '', function () { adminQuit(); }));
+    scroll();
+  }
+  function shrink(file) { // réduit la photo dans le téléphone avant l'envoi (JPEG, 1200 px max)
+    return new Promise(function (ok, ko) {
+      var url = URL.createObjectURL(file), im = new Image();
+      im.onload = function () {
+        var k = Math.min(1, 1200 / Math.max(im.naturalWidth, im.naturalHeight)), w = Math.max(1, Math.round(im.naturalWidth * k)), h = Math.max(1, Math.round(im.naturalHeight * k));
+        var c = document.createElement('canvas'); c.width = w; c.height = h; var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(im, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        var q = 0.84, data = c.toDataURL('image/jpeg', q); while (data.length > 900000 && q > 0.4) { q -= 0.12; data = c.toDataURL('image/jpeg', q); }
+        ok(data);
+      };
+      im.onerror = function () { URL.revokeObjectURL(url); ko(new Error('image')); };
+      im.src = url;
+    });
+  }
+  function field(label, node) { var w = el('label', 'cm-field'); w.appendChild(el('span', null, label)); w.appendChild(node); return w; }
+  function adminAdd() {
+    if (!adm.token) return;
+    var b = botBox(), f = el('form', 'cm-aform'); f.noValidate = true;
+    b.appendChild(el('b', null, 'Nouveau produit'));
+    var file = el('input'); file.type = 'file'; file.accept = 'image/*'; file.multiple = true;
+    var prev = el('div', 'cm-prev'), name = el('input'), cat = el('select'), price = el('input'), desc = el('textarea'), msg = el('div', 'cm-amsg');
+    name.type = 'text'; name.maxLength = 80; price.type = 'text'; price.maxLength = 30; price.placeholder = 'ex. 850 DH (facultatif)'; desc.maxLength = 400; desc.rows = 3; desc.placeholder = 'facultatif';
+    Object.keys(adm.cats).forEach(function (k) { var o = el('option', null, adm.cats[k]); o.value = k; cat.appendChild(o); });
+    var photos = [];
+    file.addEventListener('change', function () {
+      var files = Array.prototype.slice.call(file.files, 0, 4); photos = []; prev.textContent = ''; msg.textContent = files.length ? 'Préparation des photos…' : '';
+      Promise.all(files.map(shrink)).then(function (list) {
+        photos = list; msg.textContent = file.files.length > 4 ? 'Seules les 4 premières photos sont gardées.' : '';
+        list.forEach(function (d) { var im = el('img'); im.src = d; im.alt = ''; prev.appendChild(im); }); scroll();
+      }).catch(function () { photos = []; msg.textContent = 'Photo illisible. Choisissez une autre image.'; });
+    });
+    f.appendChild(field('Photos (1 à 4)', file)); f.appendChild(prev);
+    f.appendChild(field('Nom du produit', name)); f.appendChild(field('Catégorie', cat)); f.appendChild(field('Prix', price)); f.appendChild(field('Description', desc));
+    var go = btn('Publier', 'red', function () {}); go.type = 'submit';
+    var cancel = btn('Annuler', '', function () { b.remove(); adminMenu(); });
+    var row = el('div', 'cm-arow'); row.appendChild(go); row.appendChild(cancel); f.appendChild(msg); f.appendChild(row);
+    f.addEventListener('submit', function (e) {
+      e.preventDefault(); e.stopPropagation();
+      if (!photos.length) { msg.textContent = 'Ajoutez au moins une photo.'; return; }
+      if (!name.value.trim()) { msg.textContent = 'Écrivez le nom du produit.'; return; }
+      go.disabled = cancel.disabled = true; msg.textContent = 'Publication en cours…';
+      post({ action: 'add', token: adm.token, name: name.value, cat: cat.value, price: price.value, desc: desc.value, images: photos.map(function (d) { return d.split(',')[1]; }) }).then(function (j) {
+        if (j.status === 200 && j.product) {
+          b.remove(); if (window.cmProducts) window.cmProducts.reload();
+          say('Produit publié : ' + j.product.name + '. Il est visible sur le site.', null, [], adminMenu, j.product.cat);
+        } else if (!expired(j)) {
+          go.disabled = cancel.disabled = false;
+          msg.textContent = j.error === 'full' ? 'Limite de produits atteinte. Supprimez-en un d’abord.' : j.error === 'image' ? 'Photo refusée. Essayez une autre image.' : j.error === 'no_storage' ? 'Le stockage des photos n’est pas activé sur Vercel.' : 'Échec de la publication. Réessayez.';
+        } else b.remove();
+      });
+    });
+    b.appendChild(f); scroll();
+  }
+  function adminDelete() {
+    if (!adm.token) return;
+    var b = botBox(); b.textContent = 'Chargement…';
+    post({ action: 'list', token: adm.token }).then(function (j) {
+      if (expired(j)) return b.remove();
+      b.textContent = '';
+      var list = j.products || [];
+      b.appendChild(el('b', null, list.length ? 'Touchez « Supprimer » à côté du produit.' : 'Aucun produit ajouté depuis ce mode.'));
+      if (!list.length) b.appendChild(el('div', 'cm-amsg', 'Les produits d’origine du site ne se suppriment pas ici.'));
+      list.forEach(function (p) {
+        var row = el('div', 'cm-drow'), im = el('img'), nm = el('span', null, p.name), armed = false;
+        im.src = p.images[0]; im.alt = '';
+        var d = btn('Supprimer', '', function () {
+          if (!armed) { armed = true; d.textContent = 'Confirmer ?'; d.classList.add('red'); return; }
+          d.disabled = true;
+          post({ action: 'delete', token: adm.token, id: p.id }).then(function (r) {
+            if (expired(r)) return;
+            if (r.status === 200) { row.remove(); if (window.cmProducts) window.cmProducts.reload(); } else { d.disabled = false; d.textContent = 'Échec, réessayer'; }
+          });
+        });
+        row.appendChild(im); row.appendChild(nm); row.appendChild(d); b.appendChild(row);
+      });
+      b.appendChild(btn('Retour', '', function () { b.remove(); adminMenu(); }));
+      scroll();
+    });
+  }
+
   // ---------- micro ----------
   function stopMic() { listening = false; if (mic) mic.classList.remove('on'); input.placeholder = T[lang].ph; try { if (rec) rec.abort(); } catch (e) {} rec = null; }
   if (mic) mic.addEventListener('click', function () {
     if (listening) { try { rec.stop(); } catch (e) { stopMic(); } return; }
-    if (busy) return;
+    if (busy || adm.on) return;
     hush(); unlock();
     var heard = '', r;
     try { r = rec = new SR(); } catch (e) { return; }

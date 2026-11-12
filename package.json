@@ -1,0 +1,7 @@
+{
+  "name": "comptoir-motard",
+  "private": true,
+  "dependencies": {
+    "@vercel/blob": "*"
+  }
+}
