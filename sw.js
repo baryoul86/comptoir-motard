@@ -1,7 +1,7 @@
 // Comptoir Motard – service worker
 // Change le numéro de version à chaque mise à jour du site.
-const CACHE = 'comptoir-motard-v9';
-const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'chat.css', 'chat.js', 'img/logo.webp', 'img/avatar-0.webp', 'img/avatar-1.webp', 'img/avatar-2.webp'];
+const CACHE = 'comptoir-motard-v10';
+const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'chat.css', 'chat.js', 'img/logo.webp', 'img/bg.svg', 'img/bg-dark.svg', 'img/avatar-0.webp', 'img/avatar-1.webp', 'img/avatar-2.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting()));
