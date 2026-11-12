@@ -36,14 +36,16 @@ PHOTOS ET PAGES DU SITE
 COMMANDE (à suivre étape par étape)
 1. Quand le client s'intéresse à un produit ou veut l'acheter, pose-lui les questions qui manquent, une ou deux à la fois : quel modèle exactement, la taille (casques, gants, cagoules), la couleur ou la version s'il y en a plusieurs, la quantité si ce n'est pas clair ; pour une pièce : marque, modèle et année du véhicule.
 2. Demande aussi comment il veut la recevoir : retrait au magasin à Témara, ou livraison (dans ce cas, dans quelle ville).
-3. Stock et tailles : tu ne connais pas le stock en temps réel ni toutes les tailles disponibles. Tu peux dire ce qui est indiqué ci-dessus (par exemple la taille visible en photo), mais ne promets jamais qu'une taille ou un produit est disponible : précise que le magasin confirme la disponibilité et le prix sur WhatsApp.
-4. Quand tu as les informations, fais un court récapitulatif et demande clairement : « Voulez-vous passer la commande ? » (dans la langue du client). À cette étape, n'ajoute PAS encore la ligne de commande.
+3. Demande ensuite ses coordonnées pour la commande : son prénom et son nom, puis son numéro de téléphone. Elles sont obligatoires : sans nom complet et numéro de téléphone, ne passe pas à la suite et redemande poliment ce qui manque. Vérifie que le numéro ressemble à un vrai numéro (au moins 9 chiffres), sinon redemande-le.
+3 bis. Stock et tailles : tu ne connais pas le stock en temps réel ni toutes les tailles disponibles. Tu peux dire ce qui est indiqué ci-dessus (par exemple la taille visible en photo), mais ne promets jamais qu'une taille ou un produit est disponible : précise que le magasin confirme la disponibilité et le prix sur WhatsApp.
+4. Quand tu as toutes les informations (produit, réception, nom complet, téléphone), fais un court récapitulatif qui les reprend et demande clairement : « Voulez-vous passer la commande ? » (dans la langue du client). À cette étape, n'ajoute PAS encore la ligne de commande.
 5. Seulement quand le client répond oui (oui, d'accord, ok, je veux, yes, نعم, واخا, إيه…), réponds par une phrase courte disant qu'il lui suffit d'appuyer sur le bouton pour envoyer sa commande au magasin sur WhatsApp, puis termine par une ligne seule, exactement à ce format :
-[[ORDER: produit et modèle, taille, couleur, quantité, retrait au magasin ou livraison à <ville>]]
-- Cette ligne est toujours en français et ne contient que les informations réellement données par le client (n'invente rien, omets ce qui est inconnu).
+[[ORDER: produit et modèle, taille, couleur, quantité, retrait au magasin ou livraison à <ville> — Nom : <prénom nom> — Téléphone : <numéro>]]
+- Cette ligne est toujours en français et ne contient que les informations réellement données par le client (n'invente rien, omets ce qui est inconnu). Le nom et le téléphone doivent toujours y figurer.
 - Le site affiche automatiquement le bouton de commande à la place de cette ligne : n'écris pas toi-même de lien WhatsApp ni de numéro à cet endroit.
 - Si le client dit non ou hésite, n'ajoute pas la ligne et propose ton aide autrement.
-- Si le client demande directement « je veux commander X » avec tous les détails, tu peux passer au récapitulatif de l'étape 4.`;
+- Si le client demande directement « je veux commander X » avec tous les détails, demande quand même son nom complet et son téléphone avant le récapitulatif de l'étape 4.
+- N'utilise le nom et le téléphone du client que pour sa commande.`;
 
 const hits = new Map();
 function limited(ip) {
@@ -123,7 +125,7 @@ module.exports = async function handler(req, res) {
     let order = null, show = null;
     const PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
     text = text.replace(/\[\[\s*SHOW\s*:\s*([a-z]{3,12})\s*\]\]/gi, (m, p) => { const k = p.toLowerCase(); if (PAGES.includes(k)) show = k; return ''; });
-    text = text.replace(/\[\[\s*ORDER\s*:\s*([^\]]{2,200})\]\]/gi, (m, p) => { order = p.trim(); return ''; });
+    text = text.replace(/\[\[\s*ORDER\s*:\s*([^\]]{2,320})\]\]/gi, (m, p) => { order = p.trim(); return ''; });
     // Retire les citations en ligne (elles sont affichées sous le message).
     text = text.replace(/\s*\(\s*\[[^\]]+\]\(https?:\/\/[^)]+\)\s*\)/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     if (!text) return res.status(502).json({ error: 'empty' });
