@@ -5,15 +5,15 @@
     fr: { tip: 'Parle avec moi 💬', sub: 'Assistante du magasin', ph: 'Écrivez votre message…', send: 'Envoyer',
       hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en anglais ou en arabe.',
       order: 'Commander sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
-      err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix' },
+      err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix', mic: 'Parler au micro', micOn: 'Je vous écoute…', micNo: 'Micro bloqué : autorisez le micro pour ce site dans votre navigateur, puis réessayez.' },
     en: { tip: 'Talk to me 💬', sub: 'Shop assistant', ph: 'Type your message…', send: 'Send',
       hello: 'Hello! I’m the Comptoir Motard assistant. Ask me about our products, a part for your motorcycle, our opening hours… I can answer in English, French or Arabic.',
       order: 'Order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
-      err: 'Sorry, I can’t answer right now. Please message us directly on WhatsApp:', wa: 'Open WhatsApp', von: 'Mute voice', voff: 'Turn voice on' },
+      err: 'Sorry, I can’t answer right now. Please message us directly on WhatsApp:', wa: 'Open WhatsApp', von: 'Mute voice', voff: 'Turn voice on', mic: 'Speak', micOn: 'Listening…', micNo: 'Microphone blocked: allow the microphone for this site in your browser, then try again.' },
     ar: { tip: 'تكلّم معي 💬', sub: 'مساعدة المتجر', ph: 'اكتب رسالتك…', send: 'إرسال',
       hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإنجليزية.',
       order: 'اطلب عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
-      err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت' }
+      err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت', mic: 'تكلّم بالميكروفون', micOn: 'أسمعك…', micNo: 'الميكروفون محظور: اسمح باستخدام الميكروفون لهذا الموقع في المتصفح ثم حاول مرة أخرى.' }
   };
   var lang = 'fr';
   try { var s = localStorage.getItem('cm-lang'); if (T[s]) lang = s; else { var n = (navigator.language || '').slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
@@ -48,7 +48,14 @@
   var log = el('div', 'cm-log'); log.setAttribute('aria-live', 'polite');
   var form = el('form', 'cm-form'), input = el('input'), send = el('button');
   input.type = 'text'; input.maxLength = 500; input.autocomplete = 'off'; input.setAttribute('dir', 'auto'); send.type = 'submit';
-  form.appendChild(input); form.appendChild(send);
+  var SR = window.SpeechRecognition || window.webkitSpeechRecognition, rec = null, listening = false, mic = null;
+  form.appendChild(input);
+  if (SR) {
+    mic = el('button', 'cm-mic'); mic.type = 'button';
+    mic.innerHTML = '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M12 15a3.5 3.5 0 0 0 3.5-3.5v-6a3.5 3.5 0 0 0-7 0v6A3.5 3.5 0 0 0 12 15Zm6-3.5a1 1 0 1 0-2 0 4 4 0 0 1-8 0 1 1 0 1 0-2 0 6 6 0 0 0 5 5.9V20H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2h-2v-2.6a6 6 0 0 0 5-5.9Z"/></svg>';
+    form.appendChild(mic);
+  }
+  form.appendChild(send);
   panel.appendChild(head); panel.appendChild(log); panel.appendChild(form);
   document.body.appendChild(launch); document.body.appendChild(panel);
 
@@ -57,7 +64,7 @@
     var t = T[l]; tip.textContent = t.tip; sub.textContent = t.sub; input.placeholder = t.ph; send.textContent = t.send;
     tip.dir = sub.dir = l === 'ar' ? 'rtl' : 'ltr';
     langs.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === l); });
-    drawVoice();
+    drawVoice(); if (mic) { mic.setAttribute('aria-label', t.mic); mic.title = t.mic; }
     if (greet && !busy) { unlock(); say(t.hello, null, []); }
   }
 
@@ -191,12 +198,28 @@
     function end() { busy = false; send.disabled = false; }
   }
 
+  // ---------- micro ----------
+  function stopMic() { listening = false; if (mic) mic.classList.remove('on'); input.placeholder = T[lang].ph; try { if (rec) rec.abort(); } catch (e) {} rec = null; }
+  if (mic) mic.addEventListener('click', function () {
+    if (listening) { try { rec.stop(); } catch (e) { stopMic(); } return; }
+    if (busy) return;
+    hush(); unlock();
+    var heard = '', r;
+    try { r = rec = new SR(); } catch (e) { return; }
+    r.lang = { fr: 'fr-FR', en: 'en-US', ar: 'ar-MA' }[lang]; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    r.onstart = function () { listening = true; mic.classList.add('on'); input.value = ''; input.placeholder = T[lang].micOn; };
+    r.onresult = function (e) { var t = ''; for (var i = 0; i < e.results.length; i++) t += e.results[i][0].transcript; heard = t.trim(); input.value = heard; };
+    r.onerror = function (e) { if (e.error === 'not-allowed' || e.error === 'service-not-allowed') { stopMic(); if (!busy) say(T[lang].micNo, null, []); } };
+    r.onend = function () { var q = heard; stopMic(); if (q && !busy) { input.value = ''; ask(q.slice(0, 500)); } };
+    try { r.start(); } catch (e) { stopMic(); }
+  });
+
   form.addEventListener('submit', function (e) { e.preventDefault(); var q = input.value.trim(); if (!q || busy) return; input.value = ''; unlock(); ask(q); });
   launch.addEventListener('click', function () {
     document.documentElement.classList.add('cm-open');
     if (!started) { started = true; unlock(); say(T[lang].hello, null, []); }
   });
-  x.addEventListener('click', function () { hush(); document.documentElement.classList.remove('cm-open'); });
+  x.addEventListener('click', function () { hush(); if (listening) stopMic(); document.documentElement.classList.remove('cm-open'); });
   vb.addEventListener('click', function () {
     voiceOn = !voiceOn; try { localStorage.setItem('cm-voice', voiceOn ? '1' : '0'); } catch (e) {}
     if (voiceOn) unlock(); else hush(); drawVoice();
