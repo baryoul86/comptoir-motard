@@ -4,15 +4,15 @@
   var T = {
     fr: { tip: 'Parle avec moi 💬', sub: 'Assistante du magasin', ph: 'Écrivez votre message…', send: 'Envoyer',
       hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en anglais ou en arabe.',
-      order: 'Commander sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
+      order: 'Envoyer ma commande sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
       err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix', mic: 'Parler au micro', micOn: 'Je vous écoute…', micNo: 'Micro bloqué : autorisez le micro pour ce site dans votre navigateur, puis réessayez.' },
     en: { tip: 'Talk to me 💬', sub: 'Shop assistant', ph: 'Type your message…', send: 'Send',
       hello: 'Hello! I’m the Comptoir Motard assistant. Ask me about our products, a part for your motorcycle, our opening hours… I can answer in English, French or Arabic.',
-      order: 'Order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
+      order: 'Send my order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
       err: 'Sorry, I can’t answer right now. Please message us directly on WhatsApp:', wa: 'Open WhatsApp', von: 'Mute voice', voff: 'Turn voice on', mic: 'Speak', micOn: 'Listening…', micNo: 'Microphone blocked: allow the microphone for this site in your browser, then try again.' },
     ar: { tip: 'تكلّم معي 💬', sub: 'مساعدة المتجر', ph: 'اكتب رسالتك…', send: 'إرسال',
       hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإنجليزية.',
-      order: 'اطلب عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
+      order: 'أرسل طلبي عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
       err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت', mic: 'تكلّم بالميكروفون', micOn: 'أسمعك…', micNo: 'الميكروفون محظور: اسمح باستخدام الميكروفون لهذا الموقع في المتصفح ثم حاول مرة أخرى.' }
   };
   var lang = 'fr';
