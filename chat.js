@@ -17,7 +17,7 @@
   };
   var lang = 'fr';
   try { var s = localStorage.getItem('cm-lang'); if (T[s]) lang = s; else { var n = (navigator.language || '').slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
-  var PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
+  var PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'autres', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
   var history = [], busy = false, started = false, talkTimer = null;
   var voiceOn = true; try { if (localStorage.getItem('cm-voice') === '0') voiceOn = false; } catch (e) {}
   var aud = null, audUrl = null, speakId = 0, serverVoice = true, stopCur = null;
@@ -278,13 +278,13 @@
     Object.keys(adm.cats).forEach(function (k) { var o = el('option', null, adm.cats[k]); o.value = k; cat.appendChild(o); });
     var photos = [];
     file.addEventListener('change', function () {
-      var files = Array.prototype.slice.call(file.files, 0, 4); photos = []; prev.textContent = ''; msg.textContent = files.length ? 'Préparation des photos…' : '';
+      var files = Array.prototype.slice.call(file.files, 0, 12); photos = []; prev.textContent = ''; msg.textContent = files.length ? 'Préparation des photos…' : '';
       Promise.all(files.map(shrink)).then(function (list) {
-        photos = list; msg.textContent = file.files.length > 4 ? 'Seules les 4 premières photos sont gardées.' : '';
+        photos = list; msg.textContent = file.files.length > 12 ? 'Seules les 12 premières photos sont gardées.' : list.length + ' photo(s) prête(s).';
         list.forEach(function (d) { var im = el('img'); im.src = d; im.alt = ''; prev.appendChild(im); }); scroll();
       }).catch(function () { photos = []; msg.textContent = 'Photo illisible. Choisissez une autre image.'; });
     });
-    f.appendChild(field('Photos (1 à 4)', file)); f.appendChild(prev);
+    f.appendChild(field('Photos (1 à 12)', file)); f.appendChild(prev);
     f.appendChild(field('Nom du produit', name)); f.appendChild(field('Catégorie', cat)); f.appendChild(field('Prix', price)); f.appendChild(field('Description', desc));
     var go = btn('Publier', 'red', function () {}); go.type = 'submit';
     var cancel = btn('Annuler', '', function () { b.remove(); adminMenu(); });
@@ -293,16 +293,27 @@
       e.preventDefault(); e.stopPropagation();
       if (!photos.length) { msg.textContent = 'Ajoutez au moins une photo.'; return; }
       if (!name.value.trim()) { msg.textContent = 'Écrivez le nom du produit.'; return; }
-      go.disabled = cancel.disabled = true; msg.textContent = 'Publication en cours…';
-      post({ action: 'add', token: adm.token, name: name.value, cat: cat.value, price: price.value, desc: desc.value, images: photos.map(function (d) { return d.split(',')[1]; }) }).then(function (j) {
-        if (j.status === 200 && j.product) {
-          b.remove(); if (window.cmProducts) window.cmProducts.reload();
-          say('Produit publié : ' + j.product.name + '. Il est visible sur le site.', null, [], adminMenu, j.product.cat);
-        } else if (!expired(j)) {
-          go.disabled = cancel.disabled = false;
-          msg.textContent = j.error === 'full' ? 'Limite de produits atteinte. Supprimez-en un d’abord.' : j.error === 'image' ? 'Photo refusée. Essayez une autre image.' : j.error === 'no_storage' ? 'Le stockage des photos n’est pas activé sur Vercel.' : 'Échec de la publication. Réessayez.';
-        } else b.remove();
-      });
+      go.disabled = cancel.disabled = true;
+      var pid = Date.now().toString(36) + Math.random().toString(36).slice(2, 10), i = 0;
+      function fail(j) {
+        if (expired(j)) return b.remove();
+        go.disabled = cancel.disabled = false;
+        msg.textContent = j.error === 'full' ? 'Limite de produits atteinte. Supprimez-en un d’abord.' : j.error === 'image' ? 'Photo refusée. Essayez une autre image.' : j.error === 'no_storage' ? 'Le stockage des photos n’est pas activé sur Vercel.' : 'Échec de la publication. Réessayez.';
+      }
+      function next() { // les photos partent une par une
+        if (i >= photos.length) {
+          msg.textContent = 'Publication en cours…';
+          return post({ action: 'add', token: adm.token, pid: pid, name: name.value, cat: cat.value, price: price.value, desc: desc.value }).then(function (j) {
+            if (j.status === 200 && j.product) {
+              b.remove(); if (window.cmProducts) window.cmProducts.reload();
+              say('Produit publié : ' + j.product.name + ' (' + j.product.images.length + ' photo(s)). Il est visible sur le site.', null, [], adminMenu, j.product.cat);
+            } else fail(j);
+          });
+        }
+        msg.textContent = 'Envoi de la photo ' + (i + 1) + ' sur ' + photos.length + '…';
+        post({ action: 'upload', token: adm.token, pid: pid, image: photos[i].split(',')[1] }).then(function (j) { if (j.status === 200) { i++; next(); } else fail(j); });
+      }
+      next();
     });
     b.appendChild(f); scroll();
   }

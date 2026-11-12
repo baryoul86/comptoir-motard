@@ -2,7 +2,7 @@
 // À définir dans Vercel > Settings > Environment Variables : ADMIN_PASSWORD (au moins 10 caractères)
 // Le stockage des photos demande un « Blob store » public relié au projet (variable BLOB_READ_WRITE_TOKEN).
 const crypto = require('crypto');
-const { CATS, configured, listProducts, addProduct, deleteProduct, text } = require('../lib/store');
+const { CATS, configured, listProducts, uploadImage, addProduct, deleteProduct, text } = require('../lib/store');
 
 const SESSION_MS = 2 * 60 * 60 * 1000;
 const fails = new Map();
@@ -67,26 +67,26 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: done });
     }
 
+    if (body.action === 'upload') {
+      const b64 = body.image;
+      if (typeof b64 !== 'string' || b64.length > 1400000) return res.status(400).json({ error: 'image' });
+      const buf = Buffer.from(b64, 'base64');
+      if (buf.length < 200 || buf.length > 1000000 || buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) return res.status(400).json({ error: 'image' });
+      const count = await uploadImage(String(body.pid || ''), buf);
+      return res.status(200).json({ count });
+    }
+
     if (body.action === 'add') {
       const name = text(body.name, 80), cat = String(body.cat || '');
       if (!name || !CATS[cat]) return res.status(400).json({ error: 'fields' });
-      const raw = Array.isArray(body.images) ? body.images.slice(0, 4) : [];
-      const images = [];
-      for (const b64 of raw) {
-        if (typeof b64 !== 'string' || b64.length > 1400000) return res.status(400).json({ error: 'image' });
-        const buf = Buffer.from(b64, 'base64');
-        if (buf.length < 200 || buf.length > 1000000 || buf[0] !== 0xff || buf[1] !== 0xd8 || buf[2] !== 0xff) return res.status(400).json({ error: 'image' });
-        images.push(buf);
-      }
-      if (!images.length) return res.status(400).json({ error: 'image' });
-      const product = await addProduct({ name, cat, price: text(body.price, 30), desc: text(body.desc, 400) }, images);
+      const product = await addProduct({ name, cat, price: text(body.price, 30), desc: text(body.desc, 400) }, String(body.pid || ''));
       return res.status(200).json({ product });
     }
 
     return res.status(400).json({ error: 'bad_request' });
   } catch (e) {
     console.error('admin', e && e.message);
-    if (e && e.message === 'full') return res.status(400).json({ error: 'full' });
+    if (e && ['full', 'toomany', 'noimage', 'invalid'].includes(e.message)) return res.status(400).json({ error: e.message === 'noimage' ? 'image' : e.message });
     return res.status(502).json({ error: 'storage' });
   }
 };
