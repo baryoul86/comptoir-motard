@@ -13,7 +13,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Comptoir Motard">
+<link rel="stylesheet" href="chat.css">
 <style>
+.logo img{display:block;width:min(300px,78vw);height:auto;margin:0 auto 6px;background:#fff;border-radius:18px;padding:6px 10px}
 section{scroll-margin-top:44px}
 #accueil{background:var(--surface)}
 #accueil .lead{margin:-6px 0 16px;color:var(--muted)}
@@ -81,7 +83,7 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
 <body>
 <header>
   <div class="wrap">
-    <div class="logo">comptoir<b>motard</b></div>
+    <div class="logo"><img src="img/logo.webp" width="720" height="562" alt="Comptoir Motard"></div>
     <p class="slogan">Votre passion, notre priorité</p>
     <a class="btn" href="https://wa.me/212628889066">WhatsApp</a>
     <a class="btn alt" href="tel:0628889066">Appeler 0628889066</a>
@@ -196,6 +198,9 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
   var navp=document.querySelector('nav a[href="#rayons"]');
   if(navp)navp.addEventListener('click',function(){filter('');});
 })();
+</script>
+<script src="chat.js" defer></script>
+<script>
 if('serviceWorker' in navigator){window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){});});}
 </script>
 </body>
