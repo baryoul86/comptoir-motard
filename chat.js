@@ -4,19 +4,20 @@
   var T = {
     fr: { tip: 'Parle avec moi 💬', sub: 'Assistante du magasin', ph: 'Écrivez votre message…', send: 'Envoyer',
       hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en anglais ou en arabe.',
-      order: 'Envoyer ma commande sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
+      show: 'Voir les photos sur le site', order: 'Envoyer ma commande sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
       err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix', mic: 'Parler au micro', micOn: 'Je vous écoute…', micNo: 'Micro bloqué : autorisez le micro pour ce site dans votre navigateur, puis réessayez.' },
     en: { tip: 'Talk to me 💬', sub: 'Shop assistant', ph: 'Type your message…', send: 'Send',
       hello: 'Hello! I’m the Comptoir Motard assistant. Ask me about our products, a part for your motorcycle, our opening hours… I can answer in English, French or Arabic.',
-      order: 'Send my order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
+      show: 'See the photos on the site', order: 'Send my order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
       err: 'Sorry, I can’t answer right now. Please message us directly on WhatsApp:', wa: 'Open WhatsApp', von: 'Mute voice', voff: 'Turn voice on', mic: 'Speak', micOn: 'Listening…', micNo: 'Microphone blocked: allow the microphone for this site in your browser, then try again.' },
     ar: { tip: 'تكلّم معي 💬', sub: 'مساعدة المتجر', ph: 'اكتب رسالتك…', send: 'إرسال',
       hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإنجليزية.',
-      order: 'أرسل طلبي عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
+      show: 'شاهد الصور في الموقع', order: 'أرسل طلبي عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
       err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت', mic: 'تكلّم بالميكروفون', micOn: 'أسمعك…', micNo: 'الميكروفون محظور: اسمح باستخدام الميكروفون لهذا الموقع في المتصفح ثم حاول مرة أخرى.' }
   };
   var lang = 'fr';
   try { var s = localStorage.getItem('cm-lang'); if (T[s]) lang = s; else { var n = (navigator.language || '').slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
+  var PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
   var history = [], busy = false, started = false, talkTimer = null;
   var voiceOn = true; try { if (localStorage.getItem('cm-voice') === '0') voiceOn = false; } catch (e) {}
   var aud = null, audUrl = null, speakId = 0, serverVoice = true, stopCur = null;
@@ -148,7 +149,7 @@
     if (last < text.length) node.appendChild(document.createTextNode(text.slice(last)));
   }
 
-  function say(text, order, sources, done) {
+  function say(text, order, sources, done, show) {
     var b = el('div', 'cm-msg cm-bot'); b.setAttribute('dir', 'auto'); log.appendChild(b);
     var body = el('span'); b.appendChild(body);
     var fdone = false;
@@ -156,6 +157,11 @@
       if (fdone) return; fdone = true;
       talk(false); fill(body, text);
       if (order) { var o = el('a', 'cm-order', T[lang].order + ' →'); o.href = waLink(T[lang].orderMsg + order); o.target = '_blank'; o.rel = 'noopener'; b.appendChild(o); }
+      if (show && PAGES.indexOf(show) >= 0) {
+        var sb = el('a', 'cm-order cm-show', T[lang].show + ' →'); sb.href = '#' + show;
+        sb.addEventListener('click', function () { hush(); document.documentElement.classList.remove('cm-open'); });
+        b.appendChild(sb);
+      }
       if (sources && sources.length) {
         var s = el('span', 'cm-src', T[lang].src);
         sources.forEach(function (u, i) { if (i) s.appendChild(document.createTextNode(' · ')); var a = el('a', null, u.title); a.href = u.url; a.target = '_blank'; a.rel = 'noopener nofollow'; s.appendChild(a); });
@@ -189,7 +195,7 @@
       .then(function (r) { return r.json().then(function (j) { if (!r.ok || !j.text) throw new Error(j.error || 'err'); return j; }); })
       .then(function (j) {
         clearTimeout(to); wait.remove(); history.push({ role: 'assistant', content: j.text });
-        say(j.text, j.order || null, j.sources || [], end);
+        say(j.text, j.order || null, j.sources || [], end, j.show || null);
       })
       .catch(function () {
         clearTimeout(to); wait.remove(); history.pop();

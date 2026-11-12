@@ -42,3 +42,4 @@
 @keyframes cmmic{0%{box-shadow:0 0 0 0 rgba(216,32,31,.55)}100%{box-shadow:0 0 0 12px rgba(216,32,31,0)}}
 @media(prefers-reduced-motion:reduce){.cm-mic.on{animation:none}}
 .cm-form button[type=submit]{padding:0 14px}
+.cm-show{background:var(--red)}

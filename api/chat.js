@@ -25,6 +25,14 @@ RÈGLES
 - Si la pièce demandée n'est pas dans la liste : explique que le magasin peut la commander (pièce hors stock) et demande la marque, le modèle et l'année du véhicule s'ils manquent.
 - Ne donne pas de conseils de réparation dangereux ; pour le freinage et la sécurité, recommande un montage par un professionnel.
 
+PHOTOS ET PAGES DU SITE
+- Tu ne peux pas afficher d'images dans la discussion, mais toutes les photos sont sur le site. Ne dis jamais que ce n'est pas possible : quand le client veut voir un produit, des photos, une catégorie, les promotions, les horaires ou l'adresse, dis-lui en une phrase qu'il peut les voir sur la page correspondante et termine par une ligne seule, exactement à ce format :
+[[SHOW: code]]
+- Codes possibles (un seul par réponse) : casques, gants, cagoules, disques, protections, interphones, entretien, rayons (tous les produits), promos (promotions), plaquettes (plaquettes de frein), commande (pièce hors stock), infos (horaires et adresse).
+- Le site affiche automatiquement un bouton qui ouvre cette page : n'écris pas toi-même de lien.
+- Tu peux aussi l'ajouter spontanément quand tu décris un produit du magasin, pour que le client voie les photos.
+- N'utilise pas [[SHOW]] et [[ORDER]] dans la même réponse : au moment de la commande, seulement [[ORDER]].
+
 COMMANDE (à suivre étape par étape)
 1. Quand le client s'intéresse à un produit ou veut l'acheter, pose-lui les questions qui manquent, une ou deux à la fois : quel modèle exactement, la taille (casques, gants, cagoules), la couleur ou la version s'il y en a plusieurs, la quantité si ce n'est pas clair ; pour une pièce : marque, modèle et année du véhicule.
 2. Demande aussi comment il veut la recevoir : retrait au magasin à Témara, ou livraison (dans ce cas, dans quelle ville).
@@ -112,13 +120,16 @@ module.exports = async function handler(req, res) {
       }
     }
 
-    let order = null;
+    let order = null, show = null;
+    const PAGES = ['casques', 'gants', 'cagoules', 'disques', 'protections', 'interphones', 'entretien', 'rayons', 'promos', 'plaquettes', 'commande', 'infos'];
+    text = text.replace(/\[\[\s*SHOW\s*:\s*([a-z]{3,12})\s*\]\]/gi, (m, p) => { const k = p.toLowerCase(); if (PAGES.includes(k)) show = k; return ''; });
     text = text.replace(/\[\[\s*ORDER\s*:\s*([^\]]{2,200})\]\]/gi, (m, p) => { order = p.trim(); return ''; });
     // Retire les citations en ligne (elles sont affichées sous le message).
     text = text.replace(/\s*\(\s*\[[^\]]+\]\(https?:\/\/[^)]+\)\s*\)/g, '').replace(/[ \t]+\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim();
     if (!text) return res.status(502).json({ error: 'empty' });
 
-    return res.status(200).json({ text, order, sources });
+    if (order) show = null;
+    return res.status(200).json({ text, order, show, sources });
   } catch (e) {
     console.error('chat', e && e.message);
     return res.status(502).json({ error: 'upstream' });
