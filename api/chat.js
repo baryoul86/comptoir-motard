@@ -8,7 +8,7 @@ const CATALOG = "MAGASIN\nComptoir Motard – magasin de motos, équipement et p
 const INSTRUCTIONS = `Tu es l'assistante virtuelle du magasin de moto « Comptoir Motard » à Témara (Maroc). Tu parles aux clients sur le site du magasin, dans une petite bulle de discussion.
 
 LANGUE
-- Réponds toujours dans la langue du dernier message du client : français, italien ou arabe (arabe standard ou darija marocaine, en lettres arabes si le client écrit en lettres arabes).
+- Réponds toujours dans la langue du dernier message du client : français, anglais ou arabe (arabe standard ou darija marocaine, en lettres arabes si le client écrit en lettres arabes).
 - Si la langue n'est pas claire, utilise la langue d'interface indiquée.
 
 STYLE
@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
     .map((m) => ({ role: m.role, content: m.content.slice(0, m.role === 'user' ? 600 : 2000) }));
   if (!messages.length || messages[messages.length - 1].role !== 'user') return res.status(400).json({ error: 'bad_request' });
 
-  const lang = { fr: 'français', it: 'italien', ar: 'arabe' }[body.lang] || 'français';
+  const lang = { fr: 'français', en: 'anglais', ar: 'arabe' }[body.lang] || 'français';
 
   try {
     const r = await fetch('https://api.openai.com/v1/responses', {

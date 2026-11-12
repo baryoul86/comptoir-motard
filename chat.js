@@ -3,15 +3,15 @@
   var WA = '212628889066';
   var T = {
     fr: { tip: 'Parle avec moi 💬', sub: 'Assistante du magasin', ph: 'Écrivez votre message…', send: 'Envoyer',
-      hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en italien ou en arabe.',
+      hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en anglais ou en arabe.',
       order: 'Commander sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
       err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix' },
-    it: { tip: 'Parla con me 💬', sub: 'Assistente del negozio', ph: 'Scrivi il tuo messaggio…', send: 'Invia',
-      hello: 'Ciao! Sono l’assistente di Comptoir Motard. Chiedimi dei nostri prodotti, di un pezzo per la tua moto, degli orari… Rispondo in italiano, francese o arabo.',
-      order: 'Ordina su WhatsApp', orderMsg: 'Buongiorno, vorrei ordinare: ', src: 'Fonti: ',
-      err: 'Mi dispiace, in questo momento non riesco a rispondere. Scrivici direttamente su WhatsApp:', wa: 'Apri WhatsApp', von: 'Disattiva la voce', voff: 'Attiva la voce' },
+    en: { tip: 'Talk to me 💬', sub: 'Shop assistant', ph: 'Type your message…', send: 'Send',
+      hello: 'Hello! I’m the Comptoir Motard assistant. Ask me about our products, a part for your motorcycle, our opening hours… I can answer in English, French or Arabic.',
+      order: 'Order on WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources: ',
+      err: 'Sorry, I can’t answer right now. Please message us directly on WhatsApp:', wa: 'Open WhatsApp', von: 'Mute voice', voff: 'Turn voice on' },
     ar: { tip: 'تكلّم معي 💬', sub: 'مساعدة المتجر', ph: 'اكتب رسالتك…', send: 'إرسال',
-      hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإيطالية.',
+      hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإنجليزية.',
       order: 'اطلب عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
       err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت' }
   };
@@ -37,7 +37,7 @@
   var panel = el('div', 'cm-panel'); panel.setAttribute('role', 'dialog'); panel.setAttribute('aria-label', 'Chat');
   var head = el('div', 'cm-head'), pface = face(), who = el('div', 'cm-who');
   var name = el('b', null, 'Comptoir Motard'), sub = el('span'), langs = el('div', 'cm-langs');
-  [['fr', 'Français'], ['it', 'Italiano'], ['ar', 'العربية']].forEach(function (l) {
+  [['fr', 'Français'], ['en', 'English'], ['ar', 'العربية']].forEach(function (l) {
     var b = el('button', null, l[1]); b.type = 'button'; b.dataset.l = l[0];
     b.addEventListener('click', function () { setLang(l[0], true); }); langs.appendChild(b);
   });
@@ -76,9 +76,9 @@
   }
   function guess(text) {
     if (/[\u0600-\u06FF]/.test(text)) return 'ar';
-    var it = (text.match(/(^|[^a-zà-ù])(il|lo|gli|che|per|sono|siamo|puoi|vuoi|questo|anche|buongiorno|ciao|grazie|più|della|delle)(?![a-zà-ù])/gi) || []).length;
+    var en = (text.match(/(^|[^a-z])(the|you|your|is|are|for|with|and|we|can|this|hello|thanks|please|have|what|would)(?![a-z])/gi) || []).length;
     var fr = (text.match(/(^|[^a-zà-ù])(le|les|des|vous|nous|pour|est|sont|avec|bonjour|merci|votre|une|pièce|très)(?![a-zà-ù])/gi) || []).length;
-    if (it > fr) return 'it'; if (fr > it) return 'fr'; return lang === 'ar' ? 'fr' : lang;
+    if (en > fr) return 'en'; if (fr > en) return 'fr'; return lang === 'ar' ? 'fr' : lang;
   }
   function clean(text) {
     return text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1').replace(/https?:\/\/\S+/g, '')
@@ -98,9 +98,9 @@
         var sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance) return ret(null);
         var l = guess(t), u = new SpeechSynthesisUtterance(t);
         var vs = sy.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(l) === 0; });
-        var fem = vs.filter(function (v) { return /female|femme|donna|am[ée]lie|audrey|marie|julie|l[ée]a|alice|elsa|federica|laila|salma|zira|google/i.test(v.name); })[0];
+        var fem = vs.filter(function (v) { return /female|femme|am[ée]lie|audrey|marie|julie|l[ée]a|samantha|victoria|karen|susan|hazel|laila|salma|zira|google/i.test(v.name); })[0];
         if (fem || vs[0]) u.voice = fem || vs[0];
-        u.lang = { fr: 'fr-FR', it: 'it-IT', ar: 'ar-SA' }[l]; u.pitch = 1.1; u.rate = 1;
+        u.lang = { fr: 'fr-FR', en: 'en-GB', ar: 'ar-SA' }[l]; u.pitch = 1.1; u.rate = 1;
         u.onstart = function () { if (id === speakId) ret(handle); };
         u.onend = fin; u.onerror = function () { ret(null); fin(); };
         sy.cancel(); sy.speak(u);

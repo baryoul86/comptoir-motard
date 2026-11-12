@@ -38,7 +38,7 @@ module.exports = async function handler(req, res) {
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + key },
       body: JSON.stringify({
         model: MODEL, voice: VOICE, input: text, response_format: 'mp3',
-        instructions: 'Voix féminine, chaleureuse et naturelle, comme une vendeuse sympathique dans un magasin de moto. Parle dans la langue du texte (français, italien ou arabe), à un rythme normal.',
+        instructions: 'Voix féminine, chaleureuse et naturelle, comme une vendeuse sympathique dans un magasin de moto. Parle dans la langue du texte (français, anglais ou arabe), à un rythme normal.',
       }),
     });
     if (!r.ok) {

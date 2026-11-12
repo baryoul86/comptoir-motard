@@ -30,8 +30,10 @@ body #accueil{background:var(--surface);padding:16px 0 96px;border-bottom:0}
 body #accueil h2{font-size:19px;margin-bottom:10px}
 .tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 @media(min-width:700px){.tiles{grid-template-columns:repeat(3,1fr)}}
-.tile{display:flex;align-items:center;min-height:48px;padding:6px 12px;border-radius:12px;background:var(--bg);color:var(--text);text-decoration:none;border:1px solid var(--line);font-weight:700;font-size:15.5px;line-height:1.2;border-left:4px solid var(--red)}
+.tile{display:flex;align-items:center;gap:10px;min-height:56px;padding:5px 10px 5px 6px;border-radius:12px;background:var(--bg);color:var(--text);text-decoration:none;border:1px solid var(--line);font-weight:700;font-size:15.5px;line-height:1.2;border-left:4px solid var(--red)}
 .tile.red{background:var(--red);border-color:var(--red);color:#fff}
+.tile .th{flex:0 0 46px;width:46px;height:46px;border-radius:8px;background:#fff center/cover no-repeat;border:1px solid var(--line)}
+.tile.noth{padding-left:14px}
 .tile:active{transform:scale(.98)}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;-webkit-overflow-scrolling:touch}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:8px 14px;border-radius:99px;font:inherit;font-size:14px;cursor:pointer}
@@ -99,17 +101,17 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
 <section id="accueil" class="on"><div class="wrap">
   <h2>Nos produits</h2>
   <div class="tiles">
-    <a class="tile red" href="#promos">Promotions</a>
-    <a class="tile" href="#casques">Casques</a>
-    <a class="tile" href="#gants">Gants</a>
-    <a class="tile" href="#cagoules">Cagoules</a>
-    <a class="tile" href="#plaquettes">Plaquettes de frein</a>
-    <a class="tile" href="#disques">Disques de frein</a>
-    <a class="tile" href="#protections">Protections</a>
-    <a class="tile" href="#interphones">Interphones</a>
-    <a class="tile" href="#entretien">Entretien</a>
-    <a class="tile" href="#commande">Pièce hors stock</a>
-    <a class="tile" href="#infos">Horaires &amp; accès</a>
+    <a class="tile red" href="#promos" data-img="#promos img"><i class="th"></i>Promotions</a>
+    <a class="tile" href="#casques" data-img='.prod[data-cat="casques"] img'><i class="th"></i>Casques</a>
+    <a class="tile" href="#gants" data-img='.prod[data-cat="gants"] img'><i class="th"></i>Gants</a>
+    <a class="tile" href="#cagoules" data-img='.prod[data-cat="cagoules"] img'><i class="th"></i>Cagoules</a>
+    <a class="tile" href="#plaquettes" data-img="#plaquettes img"><i class="th"></i>Plaquettes de frein</a>
+    <a class="tile" href="#disques" data-img='.prod[data-cat="disques"] img'><i class="th"></i>Disques de frein</a>
+    <a class="tile" href="#protections" data-img='.prod[data-cat="protections"] img'><i class="th"></i>Protections</a>
+    <a class="tile" href="#interphones" data-img='.prod[data-cat="interphones"] img'><i class="th"></i>Interphones</a>
+    <a class="tile" href="#entretien" data-img='.prod[data-cat="entretien"] img'><i class="th"></i>Entretien</a>
+    <a class="tile noth" href="#commande">Pièce hors stock</a>
+    <a class="tile noth" href="#infos">Horaires &amp; accès</a>
   </div>
 </div></section>
 
@@ -198,6 +200,7 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
     document.querySelectorAll('section').forEach(function(s){s.classList.toggle('on',s.id===view);});
     root.dataset.view=view;window.scrollTo(0,0);
   }
+  document.querySelectorAll('.tile[data-img]').forEach(function(t){var im=document.querySelector(t.dataset.img);if(im)t.querySelector('.th').style.backgroundImage='url("'+im.getAttribute('src')+'")';});
   chips.forEach(function(c){c.addEventListener('click',function(){location.hash=c.dataset.cat||'rayons';});});
   root.classList.add('js');window.addEventListener('hashchange',show);show();
 })();
