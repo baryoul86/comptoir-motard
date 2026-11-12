@@ -5,19 +5,22 @@
     fr: { tip: 'Parle avec moi 💬', sub: 'Assistante du magasin', ph: 'Écrivez votre message…', send: 'Envoyer',
       hello: 'Bonjour ! Je suis l’assistante de Comptoir Motard. Posez-moi vos questions sur nos produits, une pièce pour votre moto, nos horaires… Je vous réponds en français, en italien ou en arabe.',
       order: 'Commander sur WhatsApp', orderMsg: 'Bonjour, je souhaite commander : ', src: 'Sources : ',
-      err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp' },
+      err: 'Désolée, je n’arrive pas à répondre pour le moment. Écrivez-nous directement sur WhatsApp :', wa: 'Ouvrir WhatsApp', von: 'Couper la voix', voff: 'Activer la voix' },
     it: { tip: 'Parla con me 💬', sub: 'Assistente del negozio', ph: 'Scrivi il tuo messaggio…', send: 'Invia',
       hello: 'Ciao! Sono l’assistente di Comptoir Motard. Chiedimi dei nostri prodotti, di un pezzo per la tua moto, degli orari… Rispondo in italiano, francese o arabo.',
       order: 'Ordina su WhatsApp', orderMsg: 'Buongiorno, vorrei ordinare: ', src: 'Fonti: ',
-      err: 'Mi dispiace, in questo momento non riesco a rispondere. Scrivici direttamente su WhatsApp:', wa: 'Apri WhatsApp' },
+      err: 'Mi dispiace, in questo momento non riesco a rispondere. Scrivici direttamente su WhatsApp:', wa: 'Apri WhatsApp', von: 'Disattiva la voce', voff: 'Attiva la voce' },
     ar: { tip: 'تكلّم معي 💬', sub: 'مساعدة المتجر', ph: 'اكتب رسالتك…', send: 'إرسال',
       hello: 'مرحباً! أنا مساعدة متجر Comptoir Motard. اسألني عن منتجاتنا، عن قطعة لدراجتك، أو عن أوقات العمل… أجيبك بالعربية أو الفرنسية أو الإيطالية.',
       order: 'اطلب عبر واتساب', orderMsg: 'مرحباً، أريد طلب: ', src: 'المصادر: ',
-      err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب' }
+      err: 'عذراً، لا أستطيع الإجابة الآن. راسلنا مباشرة على واتساب:', wa: 'فتح واتساب', von: 'إيقاف الصوت', voff: 'تشغيل الصوت' }
   };
   var lang = 'fr';
   try { var s = localStorage.getItem('cm-lang'); if (T[s]) lang = s; else { var n = (navigator.language || '').slice(0, 2); if (T[n]) lang = n; } } catch (e) {}
   var history = [], busy = false, started = false, talkTimer = null;
+  var voiceOn = true; try { if (localStorage.getItem('cm-voice') === '0') voiceOn = false; } catch (e) {}
+  var aud = null, audUrl = null, speakId = 0, serverVoice = true, stopCur = null;
+  var SILENCE = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function el(tag, cls, text) { var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -40,7 +43,8 @@
   });
   who.appendChild(name); who.appendChild(sub); who.appendChild(langs);
   var x = el('button', 'cm-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Fermer');
-  head.appendChild(pface); head.appendChild(who); head.appendChild(x);
+  var vb = el('button', 'cm-x cm-v'); vb.type = 'button';
+  head.appendChild(pface); head.appendChild(who); head.appendChild(vb); head.appendChild(x);
   var log = el('div', 'cm-log'); log.setAttribute('aria-live', 'polite');
   var form = el('form', 'cm-form'), input = el('input'), send = el('button');
   input.type = 'text'; input.maxLength = 500; input.autocomplete = 'off'; input.setAttribute('dir', 'auto'); send.type = 'submit';
@@ -53,7 +57,68 @@
     var t = T[l]; tip.textContent = t.tip; sub.textContent = t.sub; input.placeholder = t.ph; send.textContent = t.send;
     tip.dir = sub.dir = l === 'ar' ? 'rtl' : 'ltr';
     langs.querySelectorAll('button').forEach(function (b) { b.classList.toggle('on', b.dataset.l === l); });
-    if (greet && !busy) say(t.hello, null, []);
+    drawVoice();
+    if (greet && !busy) { unlock(); say(t.hello, null, []); }
+  }
+
+  // ---------- voix ----------
+  function drawVoice() { vb.textContent = voiceOn ? '🔊' : '🔇'; vb.setAttribute('aria-label', voiceOn ? T[lang].von : T[lang].voff); vb.setAttribute('aria-pressed', String(voiceOn)); vb.title = voiceOn ? T[lang].von : T[lang].voff; }
+  function unlock() { // à appeler pendant un geste de l'utilisateur (règles des navigateurs mobiles)
+    if (!voiceOn) return;
+    try { if (!aud) { aud = new Audio(); aud.preload = 'auto'; } if (aud.paused) { aud.src = SILENCE; var p = aud.play(); if (p && p.catch) p.catch(function () {}); } } catch (e) {}
+  }
+  function hush() {
+    var f = stopCur; stopCur = null; speakId++;
+    try { if (aud) { aud.onended = aud.onerror = null; aud.pause(); } } catch (e) {}
+    try { if (window.speechSynthesis) speechSynthesis.cancel(); } catch (e) {}
+    if (audUrl) { URL.revokeObjectURL(audUrl); audUrl = null; }
+    if (f) f();
+  }
+  function guess(text) {
+    if (/[\u0600-\u06FF]/.test(text)) return 'ar';
+    var it = (text.match(/(^|[^a-zà-ù])(il|lo|gli|che|per|sono|siamo|puoi|vuoi|questo|anche|buongiorno|ciao|grazie|più|della|delle)(?![a-zà-ù])/gi) || []).length;
+    var fr = (text.match(/(^|[^a-zà-ù])(le|les|des|vous|nous|pour|est|sont|avec|bonjour|merci|votre|une|pièce|très)(?![a-zà-ù])/gi) || []).length;
+    if (it > fr) return 'it'; if (fr > it) return 'fr'; return lang === 'ar' ? 'fr' : lang;
+  }
+  function clean(text) {
+    return text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1').replace(/https?:\/\/\S+/g, '')
+      .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '').replace(/\s+/g, ' ').trim();
+  }
+  // Appelle cb({duration, onend(f)}) quand la voix démarre, ou cb(null) s'il n'y a pas de voix.
+  function speak(text, cb) {
+    var id = ++speakId, done = false, t = clean(text), endCb = null, ended = false;
+    function ret(v) { if (!done) { done = true; cb(v); } }
+    function fin() { if (!ended) { ended = true; if (endCb) endCb(); } }
+    var handle = { duration: 0, onend: function (f) { endCb = f; if (ended) f(); } };
+    if (!voiceOn || !t) return ret(null);
+    stopCur = function () { ret(null); fin(); };
+    function browserVoice() {
+      if (id !== speakId) return;
+      try {
+        var sy = window.speechSynthesis; if (!sy || !window.SpeechSynthesisUtterance) return ret(null);
+        var l = guess(t), u = new SpeechSynthesisUtterance(t);
+        var vs = sy.getVoices().filter(function (v) { return v.lang && v.lang.toLowerCase().indexOf(l) === 0; });
+        var fem = vs.filter(function (v) { return /female|femme|donna|am[ée]lie|audrey|marie|julie|l[ée]a|alice|elsa|federica|laila|salma|zira|google/i.test(v.name); })[0];
+        if (fem || vs[0]) u.voice = fem || vs[0];
+        u.lang = { fr: 'fr-FR', it: 'it-IT', ar: 'ar-SA' }[l]; u.pitch = 1.1; u.rate = 1;
+        u.onstart = function () { if (id === speakId) ret(handle); };
+        u.onend = fin; u.onerror = function () { ret(null); fin(); };
+        sy.cancel(); sy.speak(u);
+        setTimeout(function () { if (!done) { try { sy.cancel(); } catch (e) {} ret(null); fin(); } }, 2500);
+      } catch (e) { ret(null); fin(); }
+    }
+    if (!serverVoice || !aud) return browserVoice();
+    var ctl = window.AbortController ? new AbortController() : null, to = setTimeout(function () { if (ctl) ctl.abort(); }, 9000);
+    fetch('api/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: t }), signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { if (!r.ok) { if (r.status === 502 || r.status === 503 || r.status === 404) serverVoice = false; throw new Error('tts'); } return r.blob(); })
+      .then(function (b) {
+        clearTimeout(to); if (id !== speakId) return;
+        if (audUrl) URL.revokeObjectURL(audUrl); audUrl = URL.createObjectURL(b);
+        aud.onended = fin; aud.onerror = fin; aud.src = audUrl;
+        function go() { if (id !== speakId) return; handle.duration = isFinite(aud.duration) ? aud.duration : 0; ret(handle); }
+        var p = aud.play(); if (p && p.then) p.then(go, browserVoice); else go();
+      })
+      .catch(function () { clearTimeout(to); browserVoice(); });
   }
 
   function talk(on) {
@@ -79,7 +144,9 @@
   function say(text, order, sources, done) {
     var b = el('div', 'cm-msg cm-bot'); b.setAttribute('dir', 'auto'); log.appendChild(b);
     var body = el('span'); b.appendChild(body);
+    var fdone = false;
     function finish() {
+      if (fdone) return; fdone = true;
       talk(false); fill(body, text);
       if (order) { var o = el('a', 'cm-order', T[lang].order + ' →'); o.href = waLink(T[lang].orderMsg + order); o.target = '_blank'; o.rel = 'noopener'; b.appendChild(o); }
       if (sources && sources.length) {
@@ -89,13 +156,20 @@
       }
       scroll(); if (done) done();
     }
-    if (reduce) return finish();
-    var plain = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1'), i = 0, step = Math.max(1, Math.round(plain.length / 160));
-    talk(true);
-    var t = setInterval(function () {
-      i += step; body.textContent = plain.slice(0, i); scroll();
-      if (i >= plain.length) { clearInterval(t); finish(); }
-    }, 22);
+    var plain = text.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '$1');
+    speak(text, function (v) {
+      var typed = false, spoken = !v;
+      function both() { if (typed && spoken) finish(); }
+      if (v) v.onend(function () { spoken = true; both(); });
+      if (reduce) { body.textContent = plain; typed = true; return both(); }
+      var total = v && v.duration ? v.duration * 1000 * 0.92 : Math.min(7000, plain.length * 28), tick = 30;
+      var step = Math.max(1, Math.ceil(plain.length / Math.max(1, total / tick))), i = 0;
+      talk(true);
+      var t = setInterval(function () {
+        i += step; body.textContent = plain.slice(0, i); scroll();
+        if (i >= plain.length) { clearInterval(t); typed = true; both(); }
+      }, tick);
+    });
   }
 
   function ask(q) {
@@ -117,12 +191,16 @@
     function end() { busy = false; send.disabled = false; }
   }
 
-  form.addEventListener('submit', function (e) { e.preventDefault(); var q = input.value.trim(); if (!q || busy) return; input.value = ''; ask(q); });
+  form.addEventListener('submit', function (e) { e.preventDefault(); var q = input.value.trim(); if (!q || busy) return; input.value = ''; unlock(); ask(q); });
   launch.addEventListener('click', function () {
     document.documentElement.classList.add('cm-open');
-    if (!started) { started = true; say(T[lang].hello, null, []); }
+    if (!started) { started = true; unlock(); say(T[lang].hello, null, []); }
   });
-  x.addEventListener('click', function () { document.documentElement.classList.remove('cm-open'); });
+  x.addEventListener('click', function () { hush(); document.documentElement.classList.remove('cm-open'); });
+  vb.addEventListener('click', function () {
+    voiceOn = !voiceOn; try { localStorage.setItem('cm-voice', voiceOn ? '1' : '0'); } catch (e) {}
+    if (voiceOn) unlock(); else hush(); drawVoice();
+  });
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.documentElement.classList.remove('cm-open'); });
   setLang(lang, false);
 })();

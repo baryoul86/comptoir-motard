@@ -1,6 +1,6 @@
 // Comptoir Motard – service worker
 // Change le numéro de version à chaque mise à jour du site.
-const CACHE = 'comptoir-motard-v4';
+const CACHE = 'comptoir-motard-v5';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png', 'chat.css', 'chat.js', 'img/logo.webp', 'img/avatar-0.webp', 'img/avatar-1.webp', 'img/avatar-2.webp'];
 
 self.addEventListener('install', e => {

@@ -36,3 +36,4 @@
 .cm-form input{flex:1;min-width:0;font:inherit;font-size:16px;padding:11px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:var(--text)}
 .cm-form button{flex:0 0 auto;border:0;background:var(--red);color:#fff;font:inherit;font-weight:700;padding:0 18px;border-radius:99px;cursor:pointer}
 .cm-form button:disabled{opacity:.5}
+.cm-v{font-size:20px;padding:6px 6px}
