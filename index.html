@@ -17,18 +17,22 @@
 <style>
 .logo img{display:block;width:min(300px,78vw);height:auto;margin:0 auto 6px;background:#fff;border-radius:18px;padding:6px 10px}
 section{scroll-margin-top:44px}
-#accueil{background:var(--surface)}
-#accueil .lead{margin:-6px 0 16px;color:var(--muted)}
-.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-@media(min-width:700px){.tiles{grid-template-columns:repeat(4,1fr)}}
-.tile{position:relative;display:flex;align-items:flex-end;aspect-ratio:4/3;border-radius:12px;overflow:hidden;background:#1b1b20 center/cover no-repeat;color:#fff;text-decoration:none;border:1px solid var(--line)}
-.tile::before{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.85) 0%,rgba(0,0,0,.35) 55%,rgba(0,0,0,.1) 100%)}
-.tile span{position:relative;padding:10px 12px;font-weight:800;font-size:16px;line-height:1.2}
-.tile small{display:block;font-weight:500;font-size:12px;opacity:.85}
-.tile.red{background:var(--red)}
-.tile.red::before{display:none}
+html.js section{display:none}
+html.js section.on{display:block}
+html.js[data-view="accueil"] nav{display:none}
+html.js:not([data-view="accueil"]) header{display:none}
+body header{padding:16px 0 16px}
+header .logo img{width:min(170px,46vw);border-radius:14px;padding:4px 8px}
+header .slogan{margin:2px 0 4px;font-size:14.5px}
+.addr{display:inline-block;color:#fff;font-size:14.5px;text-decoration:underline;text-underline-offset:3px;margin:0 0 12px;line-height:1.35}
+header .btn{padding:9px 16px;font-size:14.5px}
+body #accueil{background:var(--surface);padding:16px 0 96px;border-bottom:0}
+body #accueil h2{font-size:19px;margin-bottom:10px}
+.tiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+@media(min-width:700px){.tiles{grid-template-columns:repeat(3,1fr)}}
+.tile{display:flex;align-items:center;min-height:48px;padding:6px 12px;border-radius:12px;background:var(--bg);color:var(--text);text-decoration:none;border:1px solid var(--line);font-weight:700;font-size:15.5px;line-height:1.2;border-left:4px solid var(--red)}
+.tile.red{background:var(--red);border-color:var(--red);color:#fff}
 .tile:active{transform:scale(.98)}
-.allbtn{display:block;text-align:center;margin:16px 0 0}
 .chips{display:flex;gap:8px;overflow-x:auto;padding:2px 0 14px;-webkit-overflow-scrolling:touch}
 .chip{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);color:var(--text);padding:8px 14px;border-radius:99px;font:inherit;font-size:14px;cursor:pointer}
 .chip.on{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
@@ -85,28 +89,28 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
   <div class="wrap">
     <div class="logo"><img src="img/logo.webp" width="720" height="562" alt="Comptoir Motard"></div>
     <p class="slogan">Votre passion, notre priorité</p>
+    <a class="addr" href="https://maps.google.com/?q=934+rue+Ahmed+Al+Bidaoui+Massira+1+Témara">934 rue Ahmed Al Bidaoui, Massira 1, Témara</a><br>
     <a class="btn" href="https://wa.me/212628889066">WhatsApp</a>
     <a class="btn alt" href="tel:0628889066">Appeler 0628889066</a>
   </div>
 </header>
-<nav><a href="#accueil">Accueil</a><a href="#promos">Promos</a><a href="#rayons">Produits</a><a href="#plaquettes">Plaquettes</a><a href="#commande">Hors stock</a><a href="#infos">Horaires & accès</a></nav>
+<nav><a href="#accueil">← Accueil</a><a href="#promos">Promos</a><a href="#rayons">Produits</a><a href="#plaquettes">Plaquettes</a><a href="#commande">Hors stock</a><a href="#infos">Horaires & accès</a></nav>
 
-<section id="accueil"><div class="wrap">
+<section id="accueil" class="on"><div class="wrap">
   <h2>Nos produits</h2>
-  <p class="lead">Touchez une catégorie pour voir les produits.</p>
   <div class="tiles">
-    <a class="tile" data-img="#promos img" href="#promos"><span>Promotions<small>Offres du moment</small></span></a>
-    <a class="tile" data-cat="casques" href="#rayons"><span>Casques<small>3 produits</small></span></a>
-    <a class="tile" data-cat="gants" href="#rayons"><span>Gants<small>2 produits</small></span></a>
-    <a class="tile" data-cat="cagoules" href="#rayons"><span>Cagoules<small>3 produits</small></span></a>
-    <a class="tile" data-img="#plaquettes img" href="#plaquettes"><span>Plaquettes de frein<small>SBS, Kolmio, Freno…</small></span></a>
-    <a class="tile" data-cat="disques" href="#rayons"><span>Disques de frein<small>2 produits</small></span></a>
-    <a class="tile" data-cat="protections" href="#rayons"><span>Protections<small>2 produits</small></span></a>
-    <a class="tile" data-cat="interphones" href="#rayons"><span>Interphones<small>1 produit</small></span></a>
-    <a class="tile" data-cat="entretien" href="#rayons"><span>Entretien<small>2 produits</small></span></a>
-    <a class="tile red" href="#commande"><span>Pièce hors stock ?<small>On la commande pour vous</small></span></a>
+    <a class="tile red" href="#promos">Promotions</a>
+    <a class="tile" href="#casques">Casques</a>
+    <a class="tile" href="#gants">Gants</a>
+    <a class="tile" href="#cagoules">Cagoules</a>
+    <a class="tile" href="#plaquettes">Plaquettes de frein</a>
+    <a class="tile" href="#disques">Disques de frein</a>
+    <a class="tile" href="#protections">Protections</a>
+    <a class="tile" href="#interphones">Interphones</a>
+    <a class="tile" href="#entretien">Entretien</a>
+    <a class="tile" href="#commande">Pièce hors stock</a>
+    <a class="tile" href="#infos">Horaires &amp; accès</a>
   </div>
-  <a class="btn allbtn" data-cat="" href="#rayons">Voir tous les produits</a>
 </div></section>
 
 
@@ -182,21 +186,20 @@ nav a{color:#eee;text-decoration:none;font-size:14px;padding:6px 12px}
 <a class="wa" href="https://wa.me/212628889066" aria-label="WhatsApp">WhatsApp</a>
 <script>
 (function(){
-  var prods=document.querySelectorAll('.prod[data-cat]'),chips=document.querySelectorAll('.chip');
-  function filter(cat){
+  var root=document.documentElement,prods=document.querySelectorAll('.prod[data-cat]'),chips=document.querySelectorAll('.chip');
+  var cats={};chips.forEach(function(c){if(c.dataset.cat)cats[c.dataset.cat]=1;});
+  var views={accueil:1,promos:1,plaquettes:1,rayons:1,commande:1,infos:1};
+  function show(){
+    var h=location.hash.slice(1),view=h,cat='';
+    if(cats[h]){view='rayons';cat=h;}
+    if(!views[view])view='accueil';
     prods.forEach(function(p){p.hidden=!!cat&&p.dataset.cat!==cat;});
     chips.forEach(function(c){c.classList.toggle('on',c.dataset.cat===cat);});
+    document.querySelectorAll('section').forEach(function(s){s.classList.toggle('on',s.id===view);});
+    root.dataset.view=view;window.scrollTo(0,0);
   }
-  document.querySelectorAll('.tile,.allbtn').forEach(function(t){
-    var img=null;
-    if(t.dataset.img)img=document.querySelector(t.dataset.img);
-    else if(t.dataset.cat)img=document.querySelector('.prod[data-cat="'+t.dataset.cat+'"] img');
-    if(img)t.style.backgroundImage='url("'+img.getAttribute('src')+'")';
-    if(t.dataset.cat!==undefined)t.addEventListener('click',function(){filter(t.dataset.cat);});
-  });
-  chips.forEach(function(c){c.addEventListener('click',function(){filter(c.dataset.cat);});});
-  var navp=document.querySelector('nav a[href="#rayons"]');
-  if(navp)navp.addEventListener('click',function(){filter('');});
+  chips.forEach(function(c){c.addEventListener('click',function(){location.hash=c.dataset.cat||'rayons';});});
+  root.classList.add('js');window.addEventListener('hashchange',show);show();
 })();
 </script>
 <script src="chat.js" defer></script>
